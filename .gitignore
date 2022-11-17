@@ -1,0 +1,13 @@
+*.pyc
+*.pyo
+/.tox
+*.egg-info
+tags
+.idea
+.ropeproject
+.cache
+.mypy_cache
+/dist
+/build
+docs/_build
+docs/examples
