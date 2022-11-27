@@ -17,6 +17,10 @@ class Event:
         return f'<Event source={self.source!r} type={self.type!r} payload={self.payload!r}>'
 
 
+class UnknownEventError(Exception):
+    pass
+
+
 class OnSpec:
     def __init__(self, source: str, type: str):
         self.source = source
@@ -53,9 +57,10 @@ class EventManager:
     def take(self, event: Event):
         """Give an event, take actions."""
         on_spec = str(OnSpec(source=event.source, type=event.type))
-        if on_spec in self._handlers:
-            for handler in self._handlers[on_spec]:
-                handler(event)
+        if on_spec not in self._handlers:
+            raise UnknownEventError(f"No handlers registered for: {on_spec!r}")
+        for handler in self._handlers[on_spec]:
+            handler(event)
 
 
 class ActionDescriptor:

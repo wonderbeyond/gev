@@ -1,5 +1,13 @@
 from unittest.mock import Mock
-from gev import default_manager, on, take, Event, EventManager
+import pytest
+from gev import (
+    default_manager,
+    on,
+    take,
+    Event,
+    EventManager,
+    UnknownEventError,
+)
 
 
 def _reset_default_manager():
@@ -43,9 +51,10 @@ def test_take_action_on_event():
     on('sys1::event_b').do(sys1_b_handler)
     on('sys1::event_b').do(sys1_b_handler_2)
 
-    take(Event(
-        source='sys2', type='event_a', payload={'a': 1}
-    ))
+    with pytest.raises(UnknownEventError):
+        take(Event(
+            source='sys2', type='event_a', payload={'a': 1}
+        ))
     assert sys1_a_handler.call_count == 0
     assert sys1_b_handler.call_count == 0
 
@@ -55,5 +64,27 @@ def test_take_action_on_event():
     assert sys1_a_handler.call_count == 0
     assert sys1_b_handler.call_count == 1
     assert sys1_b_handler_2.call_count == 1
+
+    _reset_default_manager()
+
+
+def test_take_action_for_unknown_event():
+    sys1_a_handler = Mock()
+    sys1_b_handler = Mock()
+    sys1_b_handler_2 = Mock()
+
+    on('sys1::event_a').do(sys1_a_handler)
+    on('sys1::event_b').do(sys1_b_handler)
+    on('sys1::event_b').do(sys1_b_handler_2)
+
+    with pytest.raises(UnknownEventError):
+        take(Event(
+            source='sys2', type='event_a', payload={'a': 1}
+        ))
+
+    with pytest.raises(UnknownEventError):
+        take(Event(
+            source='sys1', type='event_c', payload={'a': 1}
+        ))
 
     _reset_default_manager()
