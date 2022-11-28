@@ -62,6 +62,14 @@ class EventManager:
         for handler in self._handlers[on_spec]:
             handler(event)
 
+    async def take_async(self, event: Event):
+        """Give an event, take actions."""
+        on_spec = str(OnSpec(source=event.source, type=event.type))
+        if on_spec not in self._handlers:
+            raise UnknownEventError(f"No handlers registered for: {on_spec!r}")
+        for handler in self._handlers[on_spec]:
+            await handler(event)
+
 
 class ActionDescriptor:
     manager: EventManager
