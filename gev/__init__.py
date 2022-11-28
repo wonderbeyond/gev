@@ -1,6 +1,7 @@
 from typing import Union, Callable, Set, Dict
+import asyncio
 
-from gev.utils import import_from_string
+from gev.utils import import_from_string, force_sync
 
 
 def _parse_func(func: Union[str, Callable]) -> Callable:
@@ -60,7 +61,7 @@ class EventManager:
         if on_spec not in self._handlers:
             raise UnknownEventError(f"No handlers registered for: {on_spec!r}")
         for handler in self._handlers[on_spec]:
-            handler(event)
+            force_sync(handler)(event)
 
     async def take_async(self, event: Event):
         """Give an event, take actions."""
@@ -68,7 +69,9 @@ class EventManager:
         if on_spec not in self._handlers:
             raise UnknownEventError(f"No handlers registered for: {on_spec!r}")
         for handler in self._handlers[on_spec]:
-            await handler(event)
+            ret = handler(event)
+            if asyncio.iscoroutine(ret):
+                await ret
 
 
 class ActionDescriptor:

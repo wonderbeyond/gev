@@ -1,3 +1,5 @@
+import asyncio
+from functools import wraps
 from importlib import import_module
 
 
@@ -18,3 +20,26 @@ def import_from_string(spec):
     except (ImportError, AttributeError, ValueError) as e:
         msg = f"Could not import '{spec}'. {e.__class__.__name__}: {e}."
         raise ImportError(msg) from e
+
+
+def get_event_loop():
+    try:
+        return asyncio.get_event_loop()
+    except RuntimeError as e:
+        if "There is no current event loop in thread" in str(e):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return asyncio.get_event_loop()
+        raise
+
+
+def force_sync(fn):
+    '''
+    turn an async function to sync function
+    '''
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        res = fn(*args, **kwargs)
+        return get_event_loop().run_until_complete(res) if asyncio.iscoroutine(res) else res
+
+    return wrapper

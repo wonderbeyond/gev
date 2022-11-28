@@ -1,9 +1,10 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, AsyncMock
 import pytest
 from gev import (
     default_manager,
     on,
     take,
+    take_async,
     Event,
     EventManager,
     UnknownEventError,
@@ -64,6 +65,54 @@ def test_take_action_on_event():
     assert sys1_a_handler.call_count == 0
     assert sys1_b_handler.call_count == 1
     assert sys1_b_handler_2.call_count == 1
+
+    _reset_default_manager()
+
+
+async def test_take_async():
+    sys1_a_handler = AsyncMock()
+
+    on('sys1::event_a').do(sys1_a_handler)
+
+    await take_async(Event(
+        source='sys1', type='event_a', payload={'a': 1}
+    ))
+
+    assert sys1_a_handler.call_args.args[0].payload == {'a': 1}
+
+    _reset_default_manager()
+
+
+async def test_take_sync_2_async():
+    sys1_a_handler = Mock()
+
+    on('sys1::event_a').do(sys1_a_handler)
+
+    await take_async(Event(
+        source='sys1', type='event_a', payload={'a': 1}
+    ))
+
+    assert sys1_a_handler.call_args.args[0].payload == {'a': 1}
+
+    _reset_default_manager()
+
+
+def test_take_async_2_sync():
+    sys1_a_handler = AsyncMock()
+    sys1_b_handler = Mock()
+
+    on('sys1::event_a').do(sys1_a_handler)
+    on('sys1::event_b').do(sys1_b_handler)
+
+    take(Event(
+        source='sys1', type='event_a', payload={'a': 1}
+    ))
+    take(Event(
+        source='sys1', type='event_b', payload={'a': 2}
+    ))
+
+    assert sys1_a_handler.call_args.args[0].payload == {'a': 1}
+    assert sys1_b_handler.call_args.args[0].payload == {'a': 2}
 
     _reset_default_manager()
 
