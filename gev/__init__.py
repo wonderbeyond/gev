@@ -91,3 +91,4 @@ default_manager = EventManager()
 
 on = default_manager.on
 take = default_manager.take
+take_async = default_manager.take_async
